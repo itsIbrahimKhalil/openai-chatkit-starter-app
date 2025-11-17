@@ -1,7 +1,8 @@
 import { fileSearchTool, hostedMcpTool, Agent, AgentInputItem, Runner, withTrace } from "@openai/agents";
 import { WORKFLOW_ID } from "@/lib/config";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 60; // 60 seconds for Node.js runtime
 
 // Tool definitions
 const fileSearch = fileSearchTool([
@@ -144,43 +145,74 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
 
-    const result = await withTrace("topnotch", async () => {
-      const conversationHistory: AgentInputItem[] = [
-        { role: "user", content: [{ type: "input_text", text: input_as_text }] }
-      ];
-      
-      const runner = new Runner({
-        traceMetadata: {
-          __trace_source__: "agent-builder",
-          workflow_id: WORKFLOW_ID
-        }
-      });
-      
-      const myAgentResultTemp = await runner.run(
-        myAgent,
-        [...conversationHistory]
-      );
-
-      if (!myAgentResultTemp.finalOutput) {
-          throw new Error("Agent result is undefined");
-      }
-
-      const myAgentResult = {
-        output_text: myAgentResultTemp.finalOutput ?? ""
-      };
-
-      return new Response(JSON.stringify(myAgentResult), {
-        status: 200,
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
-      });
-    });
+    // Create encoder for SSE
+    const encoder = new TextEncoder();
     
-    return result;
+    // Create streaming response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          await withTrace("topnotch", async () => {
+            const conversationHistory: AgentInputItem[] = [
+              { role: "user", content: [{ type: "input_text", text: input_as_text }] }
+            ];
+            
+            const runner = new Runner({
+              traceMetadata: {
+                __trace_source__: "agent-builder",
+                workflow_id: WORKFLOW_ID
+              }
+            });
+            
+            // Run with streaming enabled
+            const streamedResult = await runner.run(
+              myAgent,
+              [...conversationHistory],
+              { stream: true }
+            );
+
+            // Stream events as they come in
+            for await (const event of streamedResult) {
+              // Send each event as SSE
+              const data = JSON.stringify(event);
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            }
+
+            // Wait for completion
+            await streamedResult.completed;
+
+            // Send final output
+            if (streamedResult.finalOutput) {
+              const finalData = JSON.stringify({
+                type: 'final',
+                output_text: streamedResult.finalOutput
+              });
+              controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          });
+        } catch (error) {
+          console.error("Streaming error:", error);
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          const errorData = JSON.stringify({ type: 'error', error: errorMessage });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
   } catch (error) {
     console.error("API Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

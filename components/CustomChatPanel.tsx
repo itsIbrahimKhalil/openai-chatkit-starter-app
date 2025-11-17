@@ -85,13 +85,89 @@ export function CustomChatPanel() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      // Handle SSE streaming
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
       
-      // Add assistant message to UI
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: data.output_text || "No response" },
-      ]);
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      // Add an empty assistant message that we'll update as chunks arrive
+      const assistantMessageIndex = messages.length + 1; // +1 because we already added user message
+      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+      let fullText = "";
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6); // Remove 'data: ' prefix
+            
+            if (data === '[DONE]') {
+              break;
+            }
+            
+            try {
+              const event = JSON.parse(data);
+              
+              // Handle different event types
+              if (event.type === 'final') {
+                // Final output
+                fullText = event.output_text || fullText;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    role: "assistant",
+                    content: fullText
+                  };
+                  return newMessages;
+                });
+              } else if (event.type === 'error') {
+                throw new Error(event.error);
+              } else if (event.type === 'agent_message') {
+                // Stream agent message chunks
+                if (event.content) {
+                  for (const content of event.content) {
+                    if (content.type === 'output_text' && content.text) {
+                      fullText += content.text;
+                      setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[assistantMessageIndex] = {
+                          role: "assistant",
+                          content: fullText
+                        };
+                        return newMessages;
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE data:", e, data);
+            }
+          }
+        }
+      }
+      
+      // If no content was streamed, show a default message
+      if (!fullText) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[assistantMessageIndex] = {
+            role: "assistant",
+            content: "No response from agent."
+          };
+          return newMessages;
+        });
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages(prev => [
