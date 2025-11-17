@@ -59,10 +59,8 @@ export function CustomChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!input.trim() || !sessionId) return;
+  const sendMessage = async () => {
+    if (!input.trim() || !sessionId || isLoading) return;
 
     const userMessage = input.trim();
     setInput("");
@@ -176,18 +174,25 @@ export function CustomChatPanel() {
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="border-t border-slate-200 p-4 dark:border-slate-700">
+      <div className="border-t border-slate-200 p-4 dark:border-slate-700">
         <div className="flex space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
             placeholder="Type your message..."
             disabled={isLoading || !sessionId}
             className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
           />
           <button
-            type="submit"
+            type="button"
+            onClick={sendMessage}
             disabled={isLoading || !input.trim() || !sessionId}
             className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed dark:disabled:bg-slate-700"
           >
@@ -199,7 +204,7 @@ export function CustomChatPanel() {
             Session: {sessionId.slice(0, 8)}...
           </p>
         )}
-      </form>
+      </div>
     </div>
   );
 }

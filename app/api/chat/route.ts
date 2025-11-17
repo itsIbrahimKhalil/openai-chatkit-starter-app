@@ -1,4 +1,3 @@
-import { kv } from '@vercel/kv';
 import { fileSearchTool, hostedMcpTool, Agent, AgentInputItem, Runner, withTrace } from "@openai/agents";
 import { WORKFLOW_ID } from "@/lib/config";
 
@@ -38,14 +37,14 @@ Use get_category tool first to understand what kind of products exist and use th
 });
 
 type WorkflowInput = { input_as_text: string, session_id: string };
-const MAX_HISTORY_LENGTH = 10;
 
 export async function POST(request: Request): Promise<Response> {
   const body = await request.json();
-  const { input_as_text, session_id = 'default' } = body as WorkflowInput;
+  const { input_as_text } = body as WorkflowInput;
 
   return await withTrace("topnotch", async () => {
-    let conversationHistory: AgentInputItem[] = await kv.get<AgentInputItem[]>(session_id) || [];
+    // Simple single-turn conversation (history managed on frontend)
+    const conversationHistory: AgentInputItem[] = [];
 
     conversationHistory.push({
       role: "user",
@@ -57,10 +56,6 @@ export async function POST(request: Request): Promise<Response> {
       ]
     });
 
-    if (conversationHistory.length > MAX_HISTORY_LENGTH) {
-      conversationHistory = conversationHistory.slice(-MAX_HISTORY_LENGTH);
-    }
-
     const runner = new Runner({
       traceMetadata: {
         __trace_source__: "agent-builder",
@@ -71,10 +66,6 @@ export async function POST(request: Request): Promise<Response> {
       myAgent,
       [...conversationHistory]
     );
-
-    conversationHistory.push(...myAgentResultTemp.newItems.map((item: { rawItem: AgentInputItem }) => item.rawItem));
-
-    await kv.set(session_id, conversationHistory);
 
     if (!myAgentResultTemp.finalOutput) {
         throw new Error("Agent result is undefined");
