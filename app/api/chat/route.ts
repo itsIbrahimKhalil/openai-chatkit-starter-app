@@ -17,7 +17,7 @@ const mcp = hostedMcpTool({
     "scrape_product_details"
   ],
   requireApproval: "never",
-  serverUrl: "https://2fe3f0ecaff4.ngrok-free.app/sse"
+  serverUrl: "https://d34fc96a4d8d.ngrok-free.app/sse"
 })
 
 const myAgent = new Agent({
@@ -51,52 +51,70 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
 
-    return await withTrace("topnotch", async () => {
-      const conversationHistory: AgentInputItem[] = [];
+    console.log("Starting agent run with input:", input_as_text);
 
-      conversationHistory.push({
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: input_as_text
+    try {
+      const result = await withTrace("topnotch", async () => {
+        const conversationHistory: AgentInputItem[] = [];
+
+        conversationHistory.push({
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: input_as_text
+            }
+          ]
+        });
+
+        console.log("Creating runner...");
+        const runner = new Runner({
+          traceMetadata: {
+            __trace_source__: "agent-builder",
+            workflow_id: WORKFLOW_ID
           }
-        ]
-      });
+        });
+        
+        console.log("Running agent...");
+        const myAgentResultTemp = await runner.run(
+          myAgent,
+          [...conversationHistory]
+        );
 
-      const runner = new Runner({
-        traceMetadata: {
-          __trace_source__: "agent-builder",
-          workflow_id: WORKFLOW_ID
+        console.log("Agent run complete");
+        if (!myAgentResultTemp.finalOutput) {
+            throw new Error("Agent result is undefined");
         }
-      });
-      const myAgentResultTemp = await runner.run(
-        myAgent,
-        [...conversationHistory]
-      );
+        const myAgentResult = {
+          output_text: myAgentResultTemp.finalOutput ?? ""
+        };
 
-      if (!myAgentResultTemp.finalOutput) {
-          throw new Error("Agent result is undefined");
-      }
-      const myAgentResult = {
-        output_text: myAgentResultTemp.finalOutput ?? ""
-      };
-
-      return new Response(JSON.stringify(myAgentResult), {
-        status: 200,
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
+        return new Response(JSON.stringify(myAgentResult), {
+          status: 200,
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+          }
+        });
       });
-    });
+      
+      return result;
+    } catch (innerError) {
+      console.error("Inner error (agent/trace):", innerError);
+      throw innerError;
+    }
   } catch (error) {
     console.error("API Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error("Error stack:", errorStack);
+    
     return new Response(JSON.stringify({ 
       error: "Internal server error",
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
     }), {
       status: 500,
       headers: { 
