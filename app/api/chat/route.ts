@@ -39,44 +39,78 @@ Use get_category tool first to understand what kind of products exist and use th
 type WorkflowInput = { input_as_text: string, session_id: string };
 
 export async function POST(request: Request): Promise<Response> {
-  const body = await request.json();
-  const { input_as_text } = body as WorkflowInput;
+  try {
+    const body = await request.json();
+    const { input_as_text } = body as WorkflowInput;
 
-  return await withTrace("topnotch", async () => {
-    // Simple single-turn conversation (history managed on frontend)
-    const conversationHistory: AgentInputItem[] = [];
-
-    conversationHistory.push({
-      role: "user",
-      content: [
-        {
-          type: "input_text",
-          text: input_as_text
-        }
-      ]
-    });
-
-    const runner = new Runner({
-      traceMetadata: {
-        __trace_source__: "agent-builder",
-        workflow_id: WORKFLOW_ID
-      }
-    });
-    const myAgentResultTemp = await runner.run(
-      myAgent,
-      [...conversationHistory]
-    );
-
-    if (!myAgentResultTemp.finalOutput) {
-        throw new Error("Agent result is undefined");
+    if (!input_as_text) {
+      return new Response(JSON.stringify({ error: "input_as_text is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
-    const myAgentResult = {
-      output_text: myAgentResultTemp.finalOutput ?? ""
-    };
 
-    return new Response(JSON.stringify(myAgentResult), {
-      status: 200,
+    return await withTrace("topnotch", async () => {
+      // Simple single-turn conversation (history managed on frontend)
+      const conversationHistory: AgentInputItem[] = [];
+
+      conversationHistory.push({
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: input_as_text
+          }
+        ]
+      });
+
+      const runner = new Runner({
+        traceMetadata: {
+          __trace_source__: "agent-builder",
+          workflow_id: WORKFLOW_ID
+        }
+      });
+      const myAgentResultTemp = await runner.run(
+        myAgent,
+        [...conversationHistory]
+      );
+
+      if (!myAgentResultTemp.finalOutput) {
+          throw new Error("Agent result is undefined");
+      }
+      const myAgentResult = {
+        output_text: myAgentResultTemp.finalOutput ?? ""
+      };
+
+      return new Response(JSON.stringify(myAgentResult), {
+        status: 200,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      });
+    });
+  } catch (error) {
+    console.error("API Error:", error);
+    return new Response(JSON.stringify({ 
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }), {
+      status: 500,
       headers: { "Content-Type": "application/json" }
     });
+  }
+}
+
+export async function OPTIONS(request: Request): Promise<Response> {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    }
   });
 }
