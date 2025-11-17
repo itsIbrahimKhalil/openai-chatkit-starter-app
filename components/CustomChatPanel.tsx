@@ -27,7 +27,7 @@ export function CustomChatPanel() {
   const [sessionId, setSessionId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize session ID on mount
+  // Initialize session ID and load messages on mount
   useEffect(() => {
     let id = localStorage.getItem("chat_session_id");
     if (!id) {
@@ -35,7 +35,24 @@ export function CustomChatPanel() {
       localStorage.setItem("chat_session_id", id);
     }
     setSessionId(id);
+
+    // Load saved messages from localStorage
+    const savedMessages = localStorage.getItem("chat_messages");
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (error) {
+        console.error("Failed to load messages:", error);
+      }
+    }
   }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("chat_messages", JSON.stringify(messages));
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -95,6 +112,7 @@ export function CustomChatPanel() {
     // Generate new session ID to start fresh
     const newId = uuidv4();
     localStorage.setItem("chat_session_id", newId);
+    localStorage.removeItem("chat_messages");
     setSessionId(newId);
     setMessages([]);
   };
@@ -119,7 +137,7 @@ export function CustomChatPanel() {
         {messages.length === 0 && (
           <div className="text-center text-slate-500 dark:text-slate-400 mt-8">
             <p className="text-xl font-semibold mb-2">How can I help you today?</p>
-            <p className="text-sm">Your conversation history is saved across sessions.</p>
+            <p className="text-sm">Start a conversation - it will be saved automatically.</p>
           </div>
         )}
         

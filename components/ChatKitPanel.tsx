@@ -61,9 +61,6 @@ export function ChatKitPanel({
       : "pending"
   );
   const [widgetInstanceKey, setWidgetInstanceKey] = useState(0);
-  const [initialThreadId, setInitialThreadId] = useState<string | undefined>(
-    () => isBrowser ? localStorage.getItem("chatkit_thread_id") || undefined : undefined
-  );
 
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
     setErrors((current) => ({ ...current, ...updates }));
@@ -151,10 +148,8 @@ export function ChatKitPanel({
   const handleResetChat = useCallback(() => {
     processedFacts.current.clear();
     if (isBrowser) {
-      // Clear the stored client secret and thread ID to start a fresh session
+      // Clear the stored client secret to start a fresh session
       localStorage.removeItem("chatkit_client_secret");
-      localStorage.removeItem("chatkit_thread_id");
-      setInitialThreadId(undefined);
       setScriptStatus(
         window.customElements?.get("openai-chatkit") ? "ready" : "pending"
       );
@@ -349,10 +344,6 @@ export function ChatKitPanel({
     },
     onThreadChange: () => {
       processedFacts.current.clear();
-      // Store the current thread ID for persistence
-      if (isBrowser && chatkit.control?.thread?.id) {
-        localStorage.setItem("chatkit_thread_id", chatkit.control.thread.id);
-      }
     },
     onError: ({ error }: { error: unknown }) => {
       // Note that Chatkit UI handles errors for your users.
@@ -360,21 +351,6 @@ export function ChatKitPanel({
       console.error("ChatKit error", error);
     },
   });
-
-  // Automatically navigate to stored thread when control is ready
-  useEffect(() => {
-    if (chatkit.control && initialThreadId && isBrowser) {
-      const currentThreadId = chatkit.control.thread?.id;
-      if (currentThreadId !== initialThreadId) {
-        chatkit.control.navigateToThread(initialThreadId).catch((err) => {
-          console.error("Failed to navigate to stored thread:", err);
-          // If navigation fails, clear the stored thread ID
-          localStorage.removeItem("chatkit_thread_id");
-          setInitialThreadId(undefined);
-        });
-      }
-    }
-  }, [chatkit.control, initialThreadId]);
 
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
