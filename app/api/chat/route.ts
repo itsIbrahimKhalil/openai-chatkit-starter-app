@@ -50,8 +50,22 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
 
+    // For now, return a simple test response to verify the API works
+    // TODO: Re-enable agent once environment is properly configured
+    return new Response(JSON.stringify({ 
+      output_text: `You asked: "${input_as_text}". The AI agent is currently being configured. Please check back soon.`
+    }), {
+      status: 200,
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+
+    /* Temporarily disabled until environment is configured
     return await withTrace("topnotch", async () => {
-      // Simple single-turn conversation (history managed on frontend)
       const conversationHistory: AgentInputItem[] = [];
 
       conversationHistory.push({
@@ -92,6 +106,7 @@ export async function POST(request: Request): Promise<Response> {
         }
       });
     });
+    */
   } catch (error) {
     console.error("API Error:", error);
     return new Response(JSON.stringify({ 
