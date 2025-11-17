@@ -72,7 +72,7 @@ export async function POST(request: Request): Promise<Response> {
       [...conversationHistory]
     );
 
-    conversationHistory.push(...myAgentResultTemp.newItems.map((item: any) => item.rawItem));
+    conversationHistory.push(...myAgentResultTemp.newItems.map((item: { rawItem: AgentInputItem }) => item.rawItem));
 
     await kv.set(session_id, conversationHistory);
 
