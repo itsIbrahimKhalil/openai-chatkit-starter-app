@@ -290,7 +290,6 @@ export function ChatKitPanel({
 
   const chatkit = useChatKit({
     api: { getClientSecret },
-    thread: initialThreadId ? { id: initialThreadId } : undefined,
     theme: {
       colorScheme: theme,
       ...getThemeConfig(theme),
@@ -361,6 +360,21 @@ export function ChatKitPanel({
       console.error("ChatKit error", error);
     },
   });
+
+  // Automatically navigate to stored thread when control is ready
+  useEffect(() => {
+    if (chatkit.control && initialThreadId && isBrowser) {
+      const currentThreadId = chatkit.control.thread?.id;
+      if (currentThreadId !== initialThreadId) {
+        chatkit.control.navigateToThread(initialThreadId).catch((err) => {
+          console.error("Failed to navigate to stored thread:", err);
+          // If navigation fails, clear the stored thread ID
+          localStorage.removeItem("chatkit_thread_id");
+          setInitialThreadId(undefined);
+        });
+      }
+    }
+  }, [chatkit.control, initialThreadId]);
 
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
