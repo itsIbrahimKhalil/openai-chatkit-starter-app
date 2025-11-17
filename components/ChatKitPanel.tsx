@@ -148,6 +148,8 @@ export function ChatKitPanel({
   const handleResetChat = useCallback(() => {
     processedFacts.current.clear();
     if (isBrowser) {
+      // Clear the stored client secret to start a fresh session
+      localStorage.removeItem("chatkit_client_secret");
       setScriptStatus(
         window.customElements?.get("openai-chatkit") ? "ready" : "pending"
       );
@@ -175,6 +177,21 @@ export function ChatKitPanel({
           setIsInitializingSession(false);
         }
         throw new Error(detail);
+      }
+
+      // Try to retrieve stored client secret from localStorage
+      if (isBrowser && !currentSecret) {
+        const storedSecret = localStorage.getItem("chatkit_client_secret");
+        if (storedSecret) {
+          if (isDev) {
+            console.info("[ChatKitPanel] Reusing stored client secret");
+          }
+          if (isMountedRef.current) {
+            setIsInitializingSession(false);
+            setErrorState({ session: null, integration: null, retryable: false });
+          }
+          return storedSecret;
+        }
       }
 
       if (isMountedRef.current) {
@@ -239,6 +256,11 @@ export function ChatKitPanel({
 
         if (isMountedRef.current) {
           setErrorState({ session: null, integration: null });
+        }
+
+        // Store the client secret in localStorage for persistence
+        if (isBrowser) {
+          localStorage.setItem("chatkit_client_secret", clientSecret);
         }
 
         return clientSecret;
