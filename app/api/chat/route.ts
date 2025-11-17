@@ -3,10 +3,11 @@ import { WORKFLOW_ID } from "@/lib/config";
 
 export const runtime = "edge";
 
-// Tool definitions (unchanged)
+// Tool definitions
 const fileSearch = fileSearchTool([
   "vs_6914604e9e048191906ca017d86702b9"
 ])
+
 const mcp = hostedMcpTool({
   serverLabel: "Top_Notch_MCP",
   allowedTools: [
@@ -18,10 +19,10 @@ const mcp = hostedMcpTool({
   requireApproval: "never",
   serverUrl: "https://2fe3f0ecaff4.ngrok-free.app/sse"
 })
+
 const myAgent = new Agent({
   name: "My agent",
-  instructions: `You are a helpful assistant. You will take in the question and find the answer using the mcp server. If the query is general or FAQ, then use the file search option to check in PDF. If the customer asks for suggestions, use search_products tool to get suggestions. If the customer asks for specific product details, use scrape_product_details tool to get details regarding customization and addon costs.
-Use get_category tool first to understand what kind of products exist and use that for support.`,
+  instructions: `You are a helpful assistant for Top Notch Furnishers. Answer questions about furniture products and help customers with their inquiries. If you don't have specific information, provide helpful general guidance about furniture selection and customization.`,
   model: "gpt-5",
   tools: [
     fileSearch,
@@ -50,21 +51,6 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
 
-    // For now, return a simple test response to verify the API works
-    // TODO: Re-enable agent once environment is properly configured
-    return new Response(JSON.stringify({ 
-      output_text: `You asked: "${input_as_text}". The AI agent is currently being configured. Please check back soon.`
-    }), {
-      status: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      }
-    });
-
-    /* Temporarily disabled until environment is configured
     return await withTrace("topnotch", async () => {
       const conversationHistory: AgentInputItem[] = [];
 
@@ -106,7 +92,6 @@ export async function POST(request: Request): Promise<Response> {
         }
       });
     });
-    */
   } catch (error) {
     console.error("API Error:", error);
     return new Response(JSON.stringify({ 
@@ -114,7 +99,10 @@ export async function POST(request: Request): Promise<Response> {
       details: error instanceof Error ? error.message : "Unknown error"
     }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { 
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
     });
   }
 }
