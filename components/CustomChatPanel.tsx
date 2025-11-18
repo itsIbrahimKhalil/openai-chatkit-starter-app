@@ -214,7 +214,7 @@ export function CustomChatPanel() {
         // Minimized chat button - Modern floating design
         <button
           onClick={toggleMinimize}
-          className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 pl-4 pr-5 py-4 text-white shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-200"
+          className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 pl-4 pr-5 py-4 text-white hover:scale-105 transition-all duration-200"
         >
           <div className="relative">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
