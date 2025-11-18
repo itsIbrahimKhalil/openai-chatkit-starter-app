@@ -32,3 +32,13 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Hide scrollbars for cross-browser compatibility */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
