@@ -10,9 +10,10 @@ const fileSearch = fileSearchTool([
 ])
 const mcp = hostedMcpTool({
   serverLabel: "Top_Notch_MCP",
-  serverUrl: "https://d34fc96a4d8d.ngrok-free.app/sse",
+  serverUrl: "https://d1e3057c4cef.ngrok-free.app/sse",
   allowedTools: [
     "search_product_catalog",
+    "browse_products",
     "search_products",
     "get_categories",
     "scrape_product_details"
@@ -41,21 +42,29 @@ const myAgent = new Agent({
 - Use when customer asks: \"What is your return policy?\", \"How long is delivery?\", \"Do you offer warranties?\"
 - **DO NOT use for product-specific details** (fabrics, sizes, prices, customization options)
 
+### browse_products (MCP Tool) ⭐ NEW - BEST FOR BROWSING
+- **PRIMARY TOOL for "show me all" queries**
+- Returns clean list of product names, prices, and URLs only (no full details)
+- Perfect for category browsing and exploring options
+- Examples: "What divan beds do you have?", "Show me luxury beds", "All ambassador beds"
+- Use category parameter for accurate filtering (e.g., category="Divan Storage Beds")
+- Fast, clean output - up to 50 products at once
+
 ### search_product_catalog (MCP Tool)
 - For specific product details with full pricing and options
 - Use when customer asks about ONE specific product and needs FULL DETAILS
-- Examples: \"Tell me about the Dorian bed\", \"What are the size options for Madison bed?\"
+- Examples: "Tell me about the Dorian bed", "What are the size options for Madison bed?"
 - Returns comprehensive data including size-based pricing and customization options
 - **Adjust top_k based on intent:**
   - top_k=1 for single product inquiry
   - top_k=2-3 for comparing specific products
-  - Higher only if customer explicitly wants detailed info on many products
+  - Higher only if customer explicitly wants detailed info on multiple products
 
 ### search_products (MCP Tool)
-- For quick browsing of multiple products (returns basic info: name, price, SKU, stock)
-- Use when customer is exploring options without needing detailed customization
-- Examples: \"Show me beds under £500\", \"What sofas do you have?\"
-- Faster and more efficient for general browsing
+- WooCommerce API search with attribute filtering
+- Use for specific attribute combinations (color, size, material)
+- Examples: "Show me blue beds", "Large leather chairs"
+- Less reliable for category browsing (use browse_products instead)
 
 ### scrape_product_details (MCP Tool)
 - For the most comprehensive customization details when product URL is known
@@ -92,18 +101,31 @@ Customer: \"What's your return policy?\"
 
 **Scenario 3: Browsing Multiple Products**
 \`\`\`
-Customer: \"Show me luxury beds under £1000\"
-1. Call search_products(query=\"luxury bed\", max_price=1000)
-2. Present the list with basic info
+Customer: "Show me luxury beds under £1000"
+1. Call browse_products(category="Luxury Beds", max_price=1000)
+2. Present the clean list of products
 3. If customer asks for details on a specific bed, THEN use search_product_catalog
+\`\`\`
+
+**Scenario 4: Category Browsing**
+\`\`\`
+Customer: "What divan beds do you have?" OR "Show me all divan storage beds"
+1. Call browse_products(category="Divan Storage Beds")
+2. Present clean list of all 60 products with names, prices, URLs
+3. Offer to provide details on any specific product they're interested in
+
+Customer: "Tell me more about the Dorian bed from that list"
+1. Call search_product_catalog(query="Dorian bed", top_k=1)
+2. Present full details with customization options
 \`\`\`
 
 ## CRITICAL REMINDERS:
 
-- ❌ **NEVER** say \"Florence Ambassador has these headboard options\" when discussing Dorian bed
+- ❌ **NEVER** say "Florence Ambassador has these headboard options" when discussing Dorian bed
 - ❌ **NEVER** use File Search for product options (fabrics, sizes, headboards, prices)
 - ❌ **NEVER** mix data from multiple products when answering about one specific product
-- ✅ **ALWAYS** use the \"=== CUSTOMIZATION OPTIONS ===\" section as the source of truth
+- ✅ **ALWAYS** use browse_products for "show me all" or category browsing queries
+- ✅ **ALWAYS** use the "=== CUSTOMIZATION OPTIONS ===" section as the source of truth
 - ✅ **ALWAYS** specify which product you're talking about when listing options
 - ✅ **ALWAYS** use File Search for company policies (returns, shipping, warranties)
 
@@ -117,7 +139,7 @@ Customer: \"Show me luxury beds under £1000\"
 
 ---
 `,
-  model: "gpt-5-mini",
+  model: "gpt-5-nano",
   tools: [
     fileSearch,
     mcp
@@ -171,10 +193,13 @@ export async function POST(request: Request): Promise<Response> {
               { stream: true }
             );
 
-            // Stream events as they come in
-            for await (const event of streamedResult) {
-              // Send each event as SSE
-              const data = JSON.stringify(event);
+            // Stream text chunks as they arrive
+            for await (const textChunk of streamedResult.toTextStream()) {
+              // Send each text chunk as it arrives
+              const data = JSON.stringify({
+                type: 'text_chunk',
+                text: textChunk
+              });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
 

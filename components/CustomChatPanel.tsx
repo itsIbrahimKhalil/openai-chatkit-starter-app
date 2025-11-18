@@ -119,7 +119,18 @@ export function CustomChatPanel() {
               const event = JSON.parse(data);
               
               // Handle different event types
-              if (event.type === 'final') {
+              if (event.type === 'text_chunk') {
+                // Stream text chunks character by character
+                fullText += event.text;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[assistantMessageIndex] = {
+                    role: "assistant",
+                    content: fullText
+                  };
+                  return newMessages;
+                });
+              } else if (event.type === 'final') {
                 // Final output
                 fullText = event.output_text || fullText;
                 setMessages(prev => {
@@ -132,23 +143,6 @@ export function CustomChatPanel() {
                 });
               } else if (event.type === 'error') {
                 throw new Error(event.error);
-              } else if (event.type === 'agent_message') {
-                // Stream agent message chunks
-                if (event.content) {
-                  for (const content of event.content) {
-                    if (content.type === 'output_text' && content.text) {
-                      fullText += content.text;
-                      setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[assistantMessageIndex] = {
-                          role: "assistant",
-                          content: fullText
-                        };
-                        return newMessages;
-                      });
-                    }
-                  }
-                }
               }
             } catch (e) {
               console.error("Failed to parse SSE data:", e, data);
