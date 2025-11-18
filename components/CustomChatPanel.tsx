@@ -188,7 +188,7 @@ export function CustomChatPanel() {
   };
 
   return (
-    <div className={`fixed ${isMinimized ? 'bottom-6 right-6' : 'bottom-6 right-6'} ${isMinimized ? 'w-auto' : 'w-[420px]'} transition-all duration-300 ease-in-out z-50`}>
+    <div className={`${isMinimized ? 'fixed bottom-6 right-6' : 'w-full h-full'} ${isMinimized ? 'w-auto' : ''} transition-all duration-300 ease-in-out z-50`}>
       {isMinimized ? (
         // Minimized chat button - Modern floating design
         <button
@@ -208,10 +208,10 @@ export function CustomChatPanel() {
           <span className="font-semibold text-lg">Chat</span>
         </button>
       ) : (
-        // Full chat panel - Modern card design
-        <div className="flex h-[650px] flex-col rounded-3xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
+        // Full chat panel - Takes full iframe size
+        <div className="flex h-full w-full flex-col bg-white dark:bg-slate-900">
           {/* Header - Gradient design */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -219,7 +219,7 @@ export function CustomChatPanel() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-base font-bold text-white">
                   Top Notch Assistant
                 </h2>
                 <p className="text-xs text-blue-100">Online • Ready to help</p>
@@ -291,7 +291,7 @@ export function CustomChatPanel() {
       </div>
 
       {/* Input - Modern elevated design */}
-      <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+      <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 flex-shrink-0">
         <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
           <input
             type="text"
@@ -299,12 +299,12 @@ export function CustomChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading || !sessionId}
-            className="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed transition-all"
+            className="flex-1 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed transition-all"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim() || !sessionId}
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 font-semibold text-white hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
+            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 font-semibold text-white hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:cursor-not-allowed transition-all duration-200"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
