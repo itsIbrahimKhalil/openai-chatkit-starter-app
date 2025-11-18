@@ -31,14 +31,15 @@ body {
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans);
+  overflow: hidden; /* Hide body scrollbar only */
 }
 
-/* Hide scrollbars for cross-browser compatibility */
-* {
+/* Hide scrollbars only on html and body for iframe */
+html {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
 
-*::-webkit-scrollbar {
+html::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
