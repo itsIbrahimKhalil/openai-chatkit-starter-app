@@ -78,6 +78,7 @@ export function CustomChatPanel() {
         body: JSON.stringify({
           input_as_text: userMessage,
           session_id: sessionId,
+          history: messages // Send full conversation history
         }),
       });
 

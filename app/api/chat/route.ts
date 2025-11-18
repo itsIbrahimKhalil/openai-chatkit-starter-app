@@ -153,12 +153,15 @@ Customer: "Tell me more about the Dorian bed from that list"
   }
 });
 
-type WorkflowInput = { input_as_text: string };
+type WorkflowInput = { 
+  input_as_text: string;
+  history?: Array<{ role: string; content: string }>;
+};
 
 export async function POST(request: Request): Promise<Response> {
   try {
     const body = await request.json();
-    const { input_as_text } = body as WorkflowInput;
+    const { input_as_text, history } = body as WorkflowInput;
 
     if (!input_as_text) {
       return new Response(JSON.stringify({ error: "input_as_text is required" }), {
@@ -175,9 +178,31 @@ export async function POST(request: Request): Promise<Response> {
       async start(controller) {
         try {
           await withTrace("topnotch", async () => {
-            const conversationHistory: AgentInputItem[] = [
-              { role: "user", content: [{ type: "input_text", text: input_as_text }] }
-            ];
+            // Build conversation history from previous messages
+            const conversationHistory: AgentInputItem[] = [];
+            
+            if (history && history.length > 0) {
+              for (const msg of history) {
+                if (msg.role === "user") {
+                  conversationHistory.push({
+                    role: "user",
+                    content: [{ type: "input_text", text: msg.content }]
+                  });
+                } else if (msg.role === "assistant") {
+                  conversationHistory.push({
+                    role: "assistant",
+                    status: "completed",
+                    content: [{ type: "output_text", text: msg.content }]
+                  });
+                }
+              }
+            }
+            
+            // Add current user message
+            conversationHistory.push({
+              role: "user",
+              content: [{ type: "input_text", text: input_as_text }]
+            });
             
             const runner = new Runner({
               traceMetadata: {
