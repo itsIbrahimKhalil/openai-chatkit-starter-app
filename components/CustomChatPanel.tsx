@@ -25,6 +25,7 @@ export function CustomChatPanel() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>("");
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize session ID and load messages on mount
@@ -187,19 +188,49 @@ export function CustomChatPanel() {
   };
 
   return (
-    <div className="flex h-[90vh] flex-col rounded-2xl bg-white shadow-lg dark:bg-slate-900">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-700">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Chat Assistant
-        </h2>
+    <div className={`fixed ${isMinimized ? 'bottom-4 right-4' : 'bottom-0 right-0 m-4'} ${isMinimized ? 'w-auto' : 'w-full max-w-2xl'} transition-all duration-300 z-50`}>
+      {isMinimized ? (
+        // Minimized chat button
         <button
-          onClick={clearChat}
-          className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          onClick={() => setIsMinimized(false)}
+          className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-white shadow-lg hover:bg-blue-700 transition-colors"
         >
-          New Chat
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          <span className="font-semibold">Chat with us</span>
+          {messages.length > 0 && (
+            <span className="bg-white text-blue-600 rounded-full px-2 py-0.5 text-xs font-bold">
+              {messages.length}
+            </span>
+          )}
         </button>
-      </div>
+      ) : (
+        // Full chat panel
+        <div className="flex h-[600px] flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Chat Assistant
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={clearChat}
+                className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                New Chat
+              </button>
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="rounded-lg bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                title="Minimize chat"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -276,6 +307,8 @@ export function CustomChatPanel() {
           </p>
         )}
       </div>
+        </div>
+      )}
     </div>
   );
 }
