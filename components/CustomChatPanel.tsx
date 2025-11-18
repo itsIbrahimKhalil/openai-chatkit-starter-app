@@ -187,12 +187,25 @@ export function CustomChatPanel() {
     setMessages([]);
   };
 
+  const toggleMinimize = () => {
+    const newMinimizedState = !isMinimized;
+    setIsMinimized(newMinimizedState);
+    
+    // Communicate with parent window to resize iframe
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'chatbot-resize',
+        minimized: newMinimizedState
+      }, '*');
+    }
+  };
+
   return (
     <div className={`w-full h-full flex ${isMinimized ? 'items-end justify-end p-6' : 'items-stretch'}`}>
       {isMinimized ? (
         // Minimized chat button - Modern floating design
         <button
-          onClick={() => setIsMinimized(false)}
+          onClick={toggleMinimize}
           className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 pl-4 pr-5 py-4 text-white shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-200"
         >
           <div className="relative">
@@ -236,7 +249,7 @@ export function CustomChatPanel() {
                 </svg>
               </button>
               <button
-                onClick={() => setIsMinimized(true)}
+                onClick={toggleMinimize}
                 className="rounded-lg bg-white/20 hover:bg-white/30 px-3 py-2 text-sm text-white backdrop-blur-sm transition-all"
                 title="Minimize chat"
               >

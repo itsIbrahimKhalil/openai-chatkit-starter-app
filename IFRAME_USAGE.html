@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Iframe Example</title>
+</head>
+<body>
+    <h1>Your Website Content</h1>
+    <p>This is your main website content...</p>
+
+    <!-- Chat iframe -->
+    <iframe 
+        id="chatbot-iframe"
+        src="https://openai-chatkit-starter-app-eight-silk.vercel.app/" 
+        width="400" 
+        height="600" 
+        frameborder="0" 
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms" 
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;" 
+        title="FAQ Chatbot">
+    </iframe>
+
+    <script>
+        // Listen for messages from the chatbot iframe
+        window.addEventListener('message', function(event) {
+            // Security: In production, verify event.origin matches your chatbot domain
+            // if (event.origin !== "https://openai-chatkit-starter-app-eight-silk.vercel.app") return;
+            
+            if (event.data.type === 'chatbot-resize') {
+                const iframe = document.getElementById('chatbot-iframe');
+                
+                if (event.data.minimized) {
+                    // Minimize: show only a small button area
+                    iframe.style.width = '200px';
+                    iframe.style.height = '80px';
+                } else {
+                    // Maximize: show full chat
+                    iframe.style.width = '400px';
+                    iframe.style.height = '600px';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
