@@ -280,11 +280,116 @@ export function CustomChatPanel() {
               {suggestedPrompts.map((prompt, index) => (
                 <button
                   key={index}
-                  onClick={() => {
-                    setInput(prompt);
-                    setTimeout(() => sendMessage(), 0);
+                  onClick={async () => {
+                    if (!sessionId || isLoading) return;
+                    
+                    // Add user message directly
+                    setMessages(prev => [...prev, { role: "user", content: prompt }]);
+                    setIsLoading(true);
+
+                    try {
+                      const response = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          input_as_text: prompt,
+                          session_id: sessionId,
+                          history: messages
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+
+                      const reader = response.body?.getReader();
+                      const decoder = new TextDecoder();
+                      
+                      if (!reader) {
+                        throw new Error("No response body");
+                      }
+
+                      const assistantMessageIndex = messages.length + 1;
+                      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+                      let fullText = "";
+                      
+                      while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+                        
+                        for (const line of lines) {
+                          if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            
+                            if (data === '[DONE]') {
+                              break;
+                            }
+                            
+                            try {
+                              const event = JSON.parse(data);
+                              
+                              if (event.type === 'text_chunk') {
+                                fullText += event.text;
+                                setMessages(prev => {
+                                  const newMessages = [...prev];
+                                  newMessages[assistantMessageIndex] = {
+                                    role: "assistant",
+                                    content: fullText
+                                  };
+                                  return newMessages;
+                                });
+                              } else if (event.type === 'final') {
+                                fullText = event.output_text || fullText;
+                                setMessages(prev => {
+                                  const newMessages = [...prev];
+                                  newMessages[assistantMessageIndex] = {
+                                    role: "assistant",
+                                    content: fullText
+                                  };
+                                  return newMessages;
+                                });
+                              } else if (event.type === 'error') {
+                                throw new Error(event.error);
+                              }
+                            } catch (e) {
+                              console.error("Failed to parse SSE data:", e, data);
+                            }
+                          }
+                        }
+                      }
+                      
+                      if (!fullText) {
+                        setMessages(prev => {
+                          const newMessages = [...prev];
+                          newMessages[assistantMessageIndex] = {
+                            role: "assistant",
+                            content: "No response from agent."
+                          };
+                          return newMessages;
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Error sending message:", error);
+                      setMessages(prev => [
+                        ...prev,
+                        {
+                          role: "assistant",
+                          content: "Sorry, I encountered an error. Please try again.",
+                        },
+                      ]);
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }}
-                  className="w-full px-4 py-3 text-sm bg-white dark:bg-slate-800 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                  disabled={isLoading || !sessionId}
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-slate-800 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-left shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {prompt}
                 </button>
