@@ -209,7 +209,7 @@ export function CustomChatPanel() {
   };
 
   return (
-    <div className={`w-full h-full flex ${isMinimized ? 'items-end justify-end p-6' : 'items-stretch'}`}>
+    <div className={`w-full h-full flex ${isMinimized ? 'items-end justify-end' : 'items-stretch'}`}>
       {isMinimized ? (
         // Minimized chat button - Modern floating design
         <button
