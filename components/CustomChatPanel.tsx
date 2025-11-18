@@ -188,7 +188,7 @@ export function CustomChatPanel() {
   };
 
   return (
-    <div className={`${isMinimized ? 'fixed bottom-6 right-6' : 'w-full h-full'} ${isMinimized ? 'w-auto' : ''} transition-all duration-300 ease-in-out z-50`}>
+    <div className={`w-full h-full flex ${isMinimized ? 'items-end justify-end p-6' : 'items-stretch'}`}>
       {isMinimized ? (
         // Minimized chat button - Modern floating design
         <button
