@@ -28,6 +28,14 @@ export function CustomChatPanel() {
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const suggestedPrompts = [
+    "What luxury beds do you have?",
+    "Show me divan storage beds",
+    "What's your return policy?",
+    "Tell me about the Dorian bed",
+    "Show me beds under £1000"
+  ];
+
   // Initialize session ID and load messages on mount
   useEffect(() => {
     let id = localStorage.getItem("chat_session_id");
@@ -265,7 +273,23 @@ export function CustomChatPanel() {
         {messages.length === 0 && (
           <div className="text-center text-slate-500 dark:text-slate-400 mt-8">
             <p className="text-xl font-semibold mb-2">How can I help you today?</p>
-            <p className="text-sm">Start a conversation - it will be saved automatically.</p>
+            <p className="text-sm mb-4">Start a conversation - it will be saved automatically.</p>
+            
+            <div className="mt-6 space-y-2 max-w-md mx-auto">
+              <p className="text-xs text-slate-400 mb-3">Try asking:</p>
+              {suggestedPrompts.map((prompt, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setInput(prompt);
+                    setTimeout(() => sendMessage(), 0);
+                  }}
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-slate-800 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         
